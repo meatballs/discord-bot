@@ -253,7 +253,7 @@ class Filtering(Cog):
 
     @filter.command(name="list", aliases=("get",))
     async def f_list(
-            self, ctx: Context, list_type: Optional[list_type_converter] = None, list_name: Optional[str] = None
+        self, ctx: Context, list_type: Optional[list_type_converter] = None, list_name: Optional[str] = None
     ) -> None:
         """List the contents of a specified list of filters."""
         result = await self._resolve_list_type_and_name(ctx, list_type, list_name)
@@ -281,6 +281,28 @@ class Filtering(Cog):
             embed.set_author(name=f"Description of the {filter_name} filter")
         embed.colour = Colour.blue()
         await ctx.send(embed=embed)
+
+    @filter.command(name="add", aliases=("a",))
+    async def f_add(
+        self,
+        ctx: Context,
+        list_type: Optional[list_type_converter],
+        list_name: Optional[str],
+        content: str,
+        *,
+        description: Optional[str] = None
+    ) -> None:
+        """Add an filter to the specified filter list."""
+        result = await self._resolve_list_type_and_name(ctx, list_type, list_name)
+        if result is None:
+            return
+        list_type, filter_list = result
+        list_id = filter_list.list_ids[list_type]
+
+        payload = {"filter_list": list_id, "content": content, "description": description}
+        result = await ctx.bot.api_client.post('bot/filter/filters', json=payload)
+        filter_list.add_filter(result, list_type)
+        await ctx.send(f"Added filter #{result['id']}")
 
     @filter.group(aliases=("settings",))
     async def setting(self, ctx: Context) -> None:

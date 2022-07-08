@@ -2,11 +2,13 @@ import importlib
 import importlib.util
 import inspect
 import pkgutil
+import re
 from abc import ABC, abstractmethod
-from collections import defaultdict
-from typing import Any, Iterable, Union
+from collections import defaultdict, namedtuple
+from typing import Any, Callable, Iterable, Union
 
 import regex
+from discord.ext.commands import BadArgument
 
 VARIATION_SELECTORS = r"\uFE00-\uFE0F\U000E0100-\U000E01EF"
 INVISIBLE_RE = regex.compile(rf"[{VARIATION_SELECTORS}\p{{UNASSIGNED}}\p{{FORMAT}}\p{{CONTROL}}--\s]", regex.V1)
@@ -64,6 +66,34 @@ def to_serializable(item: Any) -> Union[bool, int, float, str, list, dict, None]
     if isinstance(item, Iterable):
         return [to_serializable(subitem) for subitem in item]
     return str(item)
+
+
+description_and_settings = namedtuple("description_and_settings", ("description", "settings"))
+
+
+def description_and_settings_converter(loaded_settings: dict) -> Callable[[str], description_and_settings]:
+    """123."""
+    settings_pattern = re.compile(r"\s+(?=\S+=\S+)")
+    single_setting_pattern = re.compile(r"\S=\S")
+
+    def input_parser(input_data: str) -> description_and_settings:
+        description = None
+        parsed = settings_pattern.split(input_data)
+        if not parsed:
+            return description_and_settings(description, {})
+
+        if not single_setting_pattern.match(parsed[0]):
+            description = parsed[0]
+            parsed = parsed[1:]
+
+        settings = {setting: value for part in parsed for setting, value in part.split("=", maxsplit=1)}
+        for setting in settings:
+            if setting not in loaded_settings:
+                raise BadArgument(f"{setting!r} is not a setting recognized in the database.")
+
+        return description_and_settings(description, settings)
+
+    return input_parser
 
 
 class FieldRequiring(ABC):
