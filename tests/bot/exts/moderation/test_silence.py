@@ -21,7 +21,7 @@ redis_session = None
 def setUpModule():  # noqa: N802
     """Create and connect to the fakeredis session."""
     global redis_session
-    redis_session = RedisSession(use_fakeredis=True)
+    redis_session = RedisSession("redis://localhost", use_fakeredis=True)
     asyncio.run(redis_session.connect())
 
 
@@ -250,8 +250,6 @@ class SilenceArgumentParserTests(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
         self.bot = MockBot()
         self.cog = silence.Silence(self.bot)
-        self.cog._init_task = asyncio.Future()
-        self.cog._init_task.set_result(None)
 
     @autospec(silence.Silence, "send_message", pass_mocks=False)
     @autospec(silence.Silence, "_set_silence_overwrites", return_value=False, pass_mocks=False)
@@ -413,8 +411,6 @@ class SilenceTests(unittest.IsolatedAsyncioTestCase):
     def setUp(self) -> None:
         self.bot = MockBot(get_channel=lambda _: MockTextChannel())
         self.cog = silence.Silence(self.bot)
-        self.cog._init_task = asyncio.Future()
-        self.cog._init_task.set_result(None)
 
         # Avoid unawaited coroutine warnings.
         self.cog.scheduler.schedule_later.side_effect = lambda delay, task_id, coro: coro.close()
@@ -686,8 +682,6 @@ class UnsilenceTests(unittest.IsolatedAsyncioTestCase):
     def setUp(self) -> None:
         self.bot = MockBot(get_channel=lambda _: MockTextChannel())
         self.cog = silence.Silence(self.bot)
-        self.cog._init_task = asyncio.Future()
-        self.cog._init_task.set_result(None)
 
         overwrites_cache = mock.create_autospec(self.cog.previous_overwrites, spec_set=True)
         self.cog.previous_overwrites = overwrites_cache

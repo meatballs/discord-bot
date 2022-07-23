@@ -18,13 +18,17 @@ LOCALHOST = "127.0.0.1"
 
 async def _create_redis_session() -> RedisSession:
     """Create and connect to a redis session."""
+    if constants.Redis.password:
+        redis_url = f"redis://default:{constants.Redis.password}@{constants.Redis.host}:{constants.Redis.port}"
+    else:
+        redis_url = f"redis://{constants.Redis.host}:{constants.Redis.port}"
+
     redis_session = RedisSession(
-        address=(constants.Redis.host, constants.Redis.port),
-        password=constants.Redis.password,
-        minsize=1,
-        maxsize=20,
+        url=redis_url,
+        max_connections=20,
         use_fakeredis=constants.Redis.use_fakeredis,
         global_namespace="bot",
+        decode_responses=True,
     )
     try:
         await redis_session.connect()

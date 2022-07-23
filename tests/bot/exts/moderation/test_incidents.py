@@ -287,7 +287,7 @@ class TestIncidents(unittest.IsolatedAsyncioTestCase):
             await connection.flushall()
 
     async def asyncSetUp(self):  # noqa: N802
-        self.session = RedisSession(use_fakeredis=True)
+        self.session = RedisSession("redis://localhost", use_fakeredis=True)
         await self.session.connect()
         await self.flush()
 
